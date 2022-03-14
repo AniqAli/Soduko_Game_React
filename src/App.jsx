@@ -1,187 +1,158 @@
+import { useEffect, useState } from "react";
 import "./App.css";
-import { useState, useEffect } from "react";
 
-const initial = [
-  [2, -3, 4, 1, 5, 8, 3, -3, -6],
-  [1, -4, 1, 1, 7, 8, 2, -9, -5],
-  [3, -3, 2, 5, 9, -3, -1, 9, -5],
-  [3, 3, -2, 4, 7, 8, -4, 5, 8],
-  [2, 1, 2, -4, -7, 9, -2, 9, 1],
-  [3, 3, 1, -5, -6, 3, 1, 6, 4],
-  [3, 3, 1, -5, -6, 3, 1, 6, 4],
-  [-5, -3, -1, 8, 6, 9, 2, -6, 3],
-  [6, 2, 4, -9, -5, -1, -7, 5, 2],
-];
+const difficultyArray = ["Easy", "Medium", "Hard"];
 
 function App() {
-  const [name, setName] = useState("");
-  const [error, setError] = useState(null);
-  const [difficulty, setDifficulty] = useState();
-
-  const getFunc = (arr) => {
-    return JSON.parse(JSON.stringify(arr));
-  };
-  const [sodukoArr, setSodukoArr] = useState(getFunc(initial));
-
-  const onInputChange = (e, row, col) => {
-    var val = parseInt(e.target.value) || -1,
-      difficulty = getFunc(sodukoArr);
-
-    if (val === -1 || val >= 1 || val <= 9) {
-      difficulty[row][col] = val;
-    }
-    setSodukoArr(difficulty);
-  };
-
-  // const getData = (name) => {
-  //   fetch(
-  //     `https://vast-chamber-17969.herokuapp.com/generate?difficulty=${name}`
-  //   )
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       console.log({ data });
-  //     })
-  //     .catch((error) => {
-  //       console.log({ error });
-  //       setError(error);
-  //     });
-  // };
-
-  // useEffect(() => {
-  //   getData(name);
-  // }, []);
-
-  // const handleClick = (e) => {
-  //   console.log(e.target.value);
-  // };
-
-  const myFunction = (event) => {
-    var x = event.target.id;
-    switch (x) {
-      case "easy":
-        console.log("easy");
-        setName(difficulty);
-        getData(x);
-        break;
-      case "medium":
-        console.log("medium");
-        setName(difficulty);
-        getData(x);
-        break;
-      case "hard":
-        console.log("hard");
-        setName(difficulty);
-        getData(x);
-        break;
-      case "random":
-        console.log("random");
-        setName(difficulty);
-        getData(x);
-        break;
-      case "clear":
-        console.log("clear");
-        setName(x);
-        break;
-      default:
-        return false;
-    }
-  };
-
-  const getData = (name) => {
-    fetch(
-      `https://vast-chamber-17969.herokuapp.com/generate?difficulty=${name}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        console.log({ data });
-        setDifficulty(data.difficulty);
-      })
-      .catch((error) => {
-        console.log({ error });
-        setError(error);
-      });
-  };
+  const [gameState, setGameState] = useState({
+    boxes: [],
+  });
+  const [diff, setDiff] = useState("easy");
 
   useEffect(() => {
-    getData(name);
-  }, []);
+    async function fetchGameBoard() {
+      const res = await fetch(
+        `https://vast-chamber-17969.herokuapp.com/generate?difficulty=${diff}`
+      );
+
+      const blockNames = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+
+      const body = await res.json();
+
+      const array = [];
+      const puzzle = body.puzzle;
+
+      const keys = Object.keys(puzzle);
+
+      for (let i = 0; i < 9; i++) {
+        const blockKeys = keys.filter((key) => key.includes(blockNames[i]));
+
+        const block = Array(9).fill(0);
+        blockKeys.forEach((blockKey) => {
+          const splittedKey = blockKey.split("");
+          block[+splittedKey[1] - 1] = +puzzle[blockKey];
+        });
+        array.push(block);
+      }
+
+      setGameState({
+        boxes: array,
+      });
+    }
+
+    fetchGameBoard();
+  }, [diff]);
+
+  function onChangeHandler(value, childIdx, parentIdx) {
+    const temp = [...gameState.boxes];
+
+    temp[parentIdx][childIdx] = value;
+
+    setGameState({ boxes: temp });
+  }
+
+  // To run this, i will need a solve api
+  // async function solve() {
+  //   const res = await fetch({ method: "POST", url: "", body: gameState.boxes });
+  //   const body = await res.json();
+
+  //   if (body.solved) {
+  //     console.log("CBM", "solved");
+  //   } else {
+  //     console.log("CBM", "Wrong solution");
+  //   }
+  // }
+
+  function changeDiff(diff) {
+    console.log("CBM", { diff });
+    setDiff(diff.toLowerCase());
+  }
 
   return (
-    <div className="App">
-      <h2>Soduko Game</h2>
-      <table>
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((row, rowIndex) => {
-          return (
-            <tr
-              key={rowIndex}
-              className={(row + 1) % 3 === 0 ? "bottomBorder" : ""}
-            >
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((col, colIndex) => {
-                return (
-                  <td
-                    key={rowIndex + colIndex}
-                    className={(col + 1) % 3 === 0 ? "rightBorder" : ""}
-                  >
-                    <input
-                      className="inputField"
-                      onChange={(e) => onInputChange(e, row, col)}
-                      value={
-                        sodukoArr[row][col] === -1 ? "" : sodukoArr[row][col]
-                      }
-                      disabled={initial[row][col] !== -1}
-                    />
-                  </td>
-                );
-              })}
-            </tr>
-          );
-        })}
-        {
-          // console.log({ name })
-          console.log({ difficulty })
-        }
-      </table>
-      <div className="generateContainer">
-        <p>Generate:</p>
-        <div className="btnsContainer">
-          <button
-            className="submitBtn"
-            onClick={(e) => myFunction(e)}
-            id="easy"
-          >
-            Easy
-          </button>
-          <button
-            className="submitBtn"
-            onClick={(e) => myFunction(e)}
-            id="medium"
-          >
-            Medium
-          </button>
-          <button
-            className="submitBtn"
-            onClick={(e) => myFunction(e)}
-            id="hard"
-          >
-            Hard
-          </button>
-          <button
-            className="submitBtn"
-            onClick={(e) => myFunction(e)}
-            id="random"
-          >
-            Random
-          </button>
-          <button
-            className="submitBtn"
-            onClick={(e) => myFunction(e)}
-            id="clear"
-            style={{ border: "1px solid black" }}
-          >
-            Clear
-          </button>
+    gameState.boxes.length !== 0 && (
+      <>
+        <div
+          style={{
+            display: "flex",
+            width: "450px",
+            height: "450px",
+            flexWrap: "wrap",
+            border: ".1rem solid #333",
+          }}
+        >
+          {gameState.boxes.map((box, parentIdx) => (
+            <Box
+              key={`${parentIdx}`}
+              box={box}
+              parentIdx={parentIdx}
+              onChangeHandler={onChangeHandler}
+            />
+          ))}
         </div>
-      </div>
+        <div className="generateContainer">
+          <p>Generate:</p>
+          <div className="btnsContainer">
+            {difficultyArray.map((diff) => (
+              <button className="submitBtn" onClick={() => changeDiff(diff)}>
+                {diff}
+              </button>
+            ))}
+            <button
+              className="submitBtn"
+              onClick={() =>
+                changeDiff(difficultyArray[Math.floor(Math.random() * 3)])
+              }
+            >
+              Random
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  );
+}
+
+function Box({ box, parentIdx, onChangeHandler }) {
+  return (
+    <div
+      style={{
+        width: "calc(150px - .2rem)",
+        height: "calc(150px - .2rem)",
+        display: "flex",
+        flexWrap: "wrap",
+        border: ".1rem solid #eee",
+      }}
+    >
+      {box.map((cell, childIdx) => (
+        <Cell
+          key={`${childIdx}-${parentIdx}`}
+          cell={cell}
+          childIdx={childIdx}
+          parentIdx={parentIdx}
+          onChangeHandler={onChangeHandler}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Cell({ cell, childIdx, parentIdx, onChangeHandler }) {
+  return (
+    <div style={{ width: "calc(50px - .2rem)", height: "calc(50px - .2rem)" }}>
+      <input
+        style={{
+          all: "unset",
+          width: "100%",
+          height: "100%",
+          border: ".1rem solid #333",
+          textAlign: "center",
+          fontWeight: "800",
+        }}
+        disabled={cell === 0 ? false : true}
+        value={cell === 0 ? "" : cell}
+        onChange={(e) => onChangeHandler(e.target.value, childIdx, parentIdx)}
+        type="number"
+      />
     </div>
   );
 }
